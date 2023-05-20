@@ -92,7 +92,8 @@ async def handler(websocket):
     asyncio.create_task(sendGPS(websocket, port, baud))
 
 async def async_main():
-    async with websockets.serve(handler, "", 3001):
+    # FIXME: Figure out how to specify /pixhawk protocol endpoint
+    async with websockets.serve(handler, "localhost", 3001):
         await asyncio.Future()
 
 def main():
