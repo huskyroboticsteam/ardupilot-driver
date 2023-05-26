@@ -17,8 +17,8 @@ import dronekit
 
 import argparse
 
-def debugGPSVars():
-    (port, baud, _) = getArgs()
+def debug_GPS_vars():
+    (port, baud, _) = get_args()
     print("Waiting for connection to {}...".format(port))
     pixhawk = dronekit.connect(port, wait_ready=True, baud=baud)
     print("Connection established to {}!".format(port))
@@ -36,7 +36,7 @@ def debugGPSVars():
               .format(lat, lon, roll, pitch, yaw))
 
 # Returns (port, baud)
-def getArgs():
+def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", required=True, help="Current connection port to Pixhawk")
     parser.add_argument("--baud", required=False, default=57600, help="Current connection port to Pixhawk")
@@ -44,7 +44,7 @@ def getArgs():
     args = parser.parse_args()
     return (args.port, args.baud, args.debug)
 
-async def sendGPS(websocket, port, baud):
+async def send_GPS(websocket, port, baud):
     print("Waiting for connection to {}...".format(port))
     pixhawk = dronekit.connect(port, wait_ready=True, baud=baud)
     print("Connection established to {}!".format(port))
@@ -65,31 +65,31 @@ async def sendGPS(websocket, port, baud):
         # Yaw and heading should be equivalent
         yaw  = pixhawk.attitude.yaw;
         heading = pixhawk.heading;
-        asyncio.create_task(createGPSMessage(websocket, lat, lon))
-        asyncio.create_task(createIMUMessage(websocket, roll, pitch, yaw))
-        asyncio.create_task(createHeadingMessage(websocket, heading))
+        asyncio.create_task(create_GPS_message(websocket, lat, lon))
+        asyncio.create_task(create_IMU_message(websocket, roll, pitch, yaw))
+        asyncio.create_task(create_heading_message(websocket, heading))
 
-async def createGPSMessage(websocket, lat, lon):
+async def create_GPS_message(websocket, lat, lon):
     msg = json.loads('{}')
     msg["lat"] = lat;
     msg["lon"] = lon;
     await websocket.send(json.dumps(msg))
 
-async def createIMUMessage(websocket, roll, pitch, yaw):
+async def create_IMU_message(websocket, roll, pitch, yaw):
     msg = json.loads('{}')
     msg["roll"] = roll;
     msg["pitch"] = pitch;
     msg["yaw"] = yaw;
     await websocket.send(json.dumps(msg))
 
-async def createHeadingMessage(websocket, heading):
+async def create_heading_message(websocket, heading):
     msg = json.loads('{}')
     msg["heading"] = heading;
     await websocket.send(json.dumps(msg))
 
 async def handler(websocket):
-    (port, baud, _) = getArgs()
-    asyncio.create_task(sendGPS(websocket, port, baud))
+    (port, baud, _) = get_args()
+    asyncio.create_task(send_GPS(websocket, port, baud))
 
 async def async_main():
     # FIXME: Figure out how to specify /pixhawk protocol endpoint
@@ -97,7 +97,7 @@ async def async_main():
         await asyncio.Future()
 
 def main():
-    debugGPSVars()
+    debug_GPS_vars()
 
 if __name__ == "__main__":
     asyncio.run(async_main())
