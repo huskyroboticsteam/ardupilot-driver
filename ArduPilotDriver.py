@@ -1,4 +1,3 @@
-from math import pi
 import time
 import sys
 import asyncio
@@ -13,82 +12,84 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 10:
 import dronekit
 
 def debug_GPS_vars():
-    (port, baud, _) = get_args()
-    print("Waiting for connection to {}...".format(port))
-    ardupilot = dronekit.connect(port, wait_ready=True, baud=baud)
-    print("Connection established to {}!".format(port))
+    args = get_args()
+    print("Waiting for connection to {}...".format(args.port))
+    ardupilot = dronekit.connect(args.port, wait_ready=True, baud=args.baud)
+    print("Connection established to {}!".format(args.port))
 
     while True:
         time.sleep(1)
         lat = ardupilot.location.global_frame.lat
         lon = ardupilot.location.global_frame.lon
-        roll  = ardupilot.attitude.roll;
-        pitch  = ardupilot.attitude.pitch;
-        yaw  = ardupilot.heading;
+        roll = ardupilot.attitude.roll
+        pitch = ardupilot.attitude.pitch
+        yaw = ardupilot.heading
         print("lat: {}, lon: {}, roll: {}, pitch: {}, yaw: {}"
               .format(lat, lon, roll, pitch, yaw))
 
-# Returns (port, baud, debug)
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--port", required=True, help="Current connection port to Pixhawk")
-    parser.add_argument("--baud", required=False, default=57600, help="Current connection port to Pixhawk")
-    parser.add_argument("--debug", required=False, help="Prints lat, lon, roll, pitch, yaw, heading to stdout.")
-    args = parser.parse_args()
-    return (args.port, args.baud, args.debug)
+    parser.add_argument("port", help="Serial port connected to ardupilot")
+    parser.add_argument("-hz", "--frequency", type=float, default=0.2, help="Rate at which data is sent")
+    parser.add_argument("-b", "--baud", default=57600, type=int, help="Baud rate of serial connection")
+    parser.add_argument("--debug", action="store_true", help="Prints debug info to stdout")
+    return parser.parse_args()
 
-async def send_GPS(websocket, port, baud):
-    print("Waiting for connection to {}...".format(port))
-    ardupilot = dronekit.connect(port, wait_ready=True, baud=baud)
-    print("Connection established to {}!".format(port))
+async def send_gps_message(websocket, lat, lon):
+    msg = {
+        "type": "gps",
+        "lat": lat,
+        "lon": lon
+    }
+    await websocket.send(json.dumps(msg))
+
+async def send_orientation_message(websocket, roll, pitch, yaw):
+    msg = {
+        "type": "orientation",
+        "roll": roll,
+        "pitch": pitch,
+        "yaw": yaw
+    }
+    await websocket.send(json.dumps(msg))
+
+async def send_heading_message(websocket, heading):
+    msg = {
+        "type": "heading",
+        "heading": heading
+    }
+    await websocket.send(json.dumps(msg))
+
+async def async_main():
+    args = get_args()
+    print("Waiting for ardupilot connection on port {}...".format(args.port))
+    ardupilot = dronekit.connect(args.port, wait_ready=True, baud=args.baud)
+    print("Connection established to ardupilot!")
 
     # From M8N documentation:
     # If unable to preform normal compass calibration "compass dance" for any reason,
     # set parameter COMPASS_ORIENT=6 (Yaw270) for proper compass orientation.
-    ardupilot.parameters["COMPASS_ORIENT"] = 6;
+    ardupilot.parameters["COMPASS_ORIENT"] = 6
 
-    # TODO: Add a handler for a terminate message or something to kill this
-    while True:
-        # TODO: Decide whether to keep or remove this sleep
-        time.sleep(1)
+    async for websocket in websockets.connect("ws://localhost:3001/ardupilot"):
+        try:
+            while True:
+                lat = ardupilot.location.global_frame.lat
+                lon = ardupilot.location.global_frame.lon
+                roll = ardupilot.attitude.roll
+                pitch = ardupilot.attitude.pitch
+                yaw = ardupilot.attitude.yaw
+                heading = ardupilot.heading
 
-        lat = ardupilot.location.global_frame.lat
-        lon = ardupilot.location.global_frame.lon
-        roll  = ardupilot.attitude.roll;
-        pitch  = ardupilot.attitude.pitch;
-        yaw  = ardupilot.attitude.yaw;
-        heading = ardupilot.heading;
+                if args.debug:
+                    print(f"lat={lat:.5f}, lon={lon:.5f}, roll={roll:.2f}, pitch={pitch:.2f}, yaw={yaw:.2f}, heading={heading:.2f}")
 
-        asyncio.create_task(create_GPS_message(websocket, lat, lon))
-        asyncio.create_task(create_IMU_message(websocket, roll, pitch, yaw))
-        asyncio.create_task(create_heading_message(websocket, heading))
+                await send_gps_message(websocket, lat, lon)
+                await send_orientation_message(websocket, roll, pitch, yaw)
+                await send_heading_message(websocket, heading)
 
-async def create_GPS_message(websocket, lat, lon):
-    msg = json.loads('{}')
-    msg["lat"] = lat;
-    msg["lon"] = lon;
-    await websocket.send(json.dumps(msg))
-
-async def create_IMU_message(websocket, roll, pitch, yaw):
-    msg = json.loads('{}')
-    msg["roll"] = roll;
-    msg["pitch"] = pitch;
-    msg["yaw"] = yaw;
-    await websocket.send(json.dumps(msg))
-
-async def create_heading_message(websocket, heading):
-    msg = json.loads('{}')
-    msg["heading"] = heading;
-    await websocket.send(json.dumps(msg))
-
-async def handler(websocket):
-    (port, baud, _) = get_args()
-    asyncio.create_task(send_GPS(websocket, port, baud))
-
-async def async_main():
-    # FIXME: Figure out how to specify /ardupilot protocol endpoint
-    async with websockets.serve(handler, "localhost", 3001):
-        await asyncio.Future()
+                await asyncio.sleep(1./args.frequency)
+        except websockets.ConnectionClosed:
+            continue
 
 def main():
     debug_GPS_vars()
