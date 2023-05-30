@@ -1,0 +1,1 @@
+ATTRS{idVendor}=="3162", ATTRS{idProduct}=="0053", SYMLINK+="ttyACM10"
