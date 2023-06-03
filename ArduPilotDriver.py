@@ -1,3 +1,4 @@
+#!venv/bin/python
 import atexit
 import time
 import sys
