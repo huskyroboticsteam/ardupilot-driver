@@ -114,7 +114,7 @@ async def async_main():
         
         ardupilot.add_attribute_listener("location.global_frame", gps_callback)
         ardupilot.add_attribute_listener("attitude", orientation_callback)
-        ardupilot.add_attribute_listener("heading", heading_callback)
+        # ardupilot.add_attribute_listener("heading", heading_callback)
 
         try:
             while True:
