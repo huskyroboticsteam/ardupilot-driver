@@ -6,6 +6,7 @@ import asyncio
 import websockets
 import json
 import argparse
+import math
 
 # This if is required because dronekit is not up to date for python 3.10
 if sys.version_info.major == 3 and sys.version_info.minor >= 10:
@@ -78,6 +79,7 @@ async def async_main():
         "orientation": curr_time,
         "heading": curr_time
     }
+    last_data = {}
 
     # From M8N documentation:
     # If unable to preform normal compass calibration "compass dance" for any reason,
@@ -101,6 +103,10 @@ async def async_main():
             if curr_time >= last_data_send_times["orientation"] + 1./args.frequency:
                 if args.debug:
                     print(attitude)
+                else:
+                    pitch_deg = attitude.pitch * 180 / math.pi
+                    roll_deg = attitude.roll * 180 / math.pi
+                    print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}")
                 last_data_send_times["orientation"] = curr_time
                 asyncio.run(send_orientation_message(websocket, attitude.roll, attitude.pitch, attitude.yaw))
         
