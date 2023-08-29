@@ -106,7 +106,7 @@ async def async_main():
                 else:
                     pitch_deg = attitude.pitch * 180 / math.pi
                     roll_deg = attitude.roll * 180 / math.pi
-                    print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}")
+                    print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}", end="")
                 last_data_send_times["orientation"] = curr_time
                 asyncio.run(send_orientation_message(websocket, attitude.roll, attitude.pitch, attitude.yaw))
         
@@ -129,7 +129,7 @@ async def async_main():
             print(e)
             ardupilot.remove_attribute_listener("location.global_frame", gps_callback)
             ardupilot.remove_attribute_listener("attitude", orientation_callback)
-            ardupilot.remove_attribute_listener("heading", heading_callback)
+            # ardupilot.remove_attribute_listener("heading", heading_callback)
             continue
 
 def main():
