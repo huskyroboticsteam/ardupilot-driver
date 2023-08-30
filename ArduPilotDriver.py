@@ -79,7 +79,6 @@ async def async_main():
         "orientation": curr_time,
         "heading": curr_time
     }
-    last_data = {}
 
     # From M8N documentation:
     # If unable to preform normal compass calibration "compass dance" for any reason,
