@@ -6,6 +6,7 @@ import asyncio
 import websockets
 import json
 import argparse
+import math
 
 # This if is required because dronekit is not up to date for python 3.10
 if sys.version_info.major == 3 and sys.version_info.minor >= 10:
@@ -101,6 +102,10 @@ async def async_main():
             if curr_time >= last_data_send_times["orientation"] + 1./args.frequency:
                 if args.debug:
                     print(attitude)
+                else:
+                    pitch_deg = attitude.pitch * 180 / math.pi
+                    roll_deg = attitude.roll * 180 / math.pi
+                    print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}", end="")
                 last_data_send_times["orientation"] = curr_time
                 asyncio.run(send_orientation_message(websocket, attitude.roll, attitude.pitch, attitude.yaw))
         
@@ -114,7 +119,7 @@ async def async_main():
         
         ardupilot.add_attribute_listener("location.global_frame", gps_callback)
         ardupilot.add_attribute_listener("attitude", orientation_callback)
-        ardupilot.add_attribute_listener("heading", heading_callback)
+        # ardupilot.add_attribute_listener("heading", heading_callback)
 
         try:
             while True:
@@ -123,7 +128,7 @@ async def async_main():
             print(e)
             ardupilot.remove_attribute_listener("location.global_frame", gps_callback)
             ardupilot.remove_attribute_listener("attitude", orientation_callback)
-            ardupilot.remove_attribute_listener("heading", heading_callback)
+            # ardupilot.remove_attribute_listener("heading", heading_callback)
             continue
 
 def main():
