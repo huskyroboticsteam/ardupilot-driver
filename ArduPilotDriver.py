@@ -36,7 +36,23 @@ def get_args():
     parser.add_argument("-hz", "--frequency", type=float, default=10.0, help="Rate at which data is sent")
     parser.add_argument("-b", "--baud", default=57600, type=int, help="Baud rate of serial connection")
     parser.add_argument("--debug", action="store_true", help="Prints debug info to stdout")
+    parser.add_argument("--no_ws", action="store_true", help="Use dummy WS connection, for debugging")
+    parser.add_argument("--yaw_offset", type=float, default=0.0, help="Constant to add to heading (degrees)")
     return parser.parse_args()
+
+class DummyWebsocket(object):
+    async def send(self, *_, **__):
+        return
+
+class DummyWebsocketProvider(object):
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return DummyWebsocket()
+
+def create_websocket(url, dummy=False):
+    return DummyWebsocketProvider() if dummy else websockets.connect(url)
 
 async def send_gps_message(websocket, lat, lon):
     msg = {
@@ -86,7 +102,7 @@ async def async_main():
     ardupilot.parameters["COMPASS_ORIENT"] = 6
 
     print("Connecting to rover server...")
-    async for websocket in websockets.connect("ws://localhost:3001/ardupilot"):
+    async for websocket in create_websocket("ws://localhost:3001/ardupilot", dummy=args.no_ws):
         print("Done!")
         def gps_callback(self, _, frame):
             curr_time = time.perf_counter()
@@ -105,7 +121,10 @@ async def async_main():
                 else:
                     pitch_deg = attitude.pitch * 180 / math.pi
                     roll_deg = attitude.roll * 180 / math.pi
-                    print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}", end="")
+                    yaw_deg = attitude.yaw * 180 / math.pi + args.yaw_offset
+                    yaw_deg %= 360
+                    yaw_deg = yaw_deg - 360 if yaw_deg > 180 else yaw_deg
+                    print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}, yaw={yaw_deg: 4.0f}", end="")
                 last_data_send_times["orientation"] = curr_time
                 asyncio.run(send_orientation_message(websocket, attitude.roll, attitude.pitch, attitude.yaw))
         
