@@ -64,6 +64,22 @@ async def send_orientation_message(websocket, roll, pitch, yaw):
     await websocket.send(json.dumps(msg))
 
 
+async def send_heading_message(websocket, heading):
+    msg = {
+        "type": "heading",
+        "heading": heading
+    }
+    await websocket.send(json.dumps(msg))
+
+
+async def send_altitude_message(websocket, altitude):
+    msg = {
+        "type": "altitude",
+        "altitude": altitude
+    }
+    await websocket.send(json.dumps(msg))
+
+
 async def async_main():
     args = get_args()
     print("Waiting for ardupilot connection on port {}...".format(args.port))
@@ -79,7 +95,8 @@ async def async_main():
     last_data_send_times = {
         "gps": curr_time,
         "orientation": curr_time,
-        "heading": curr_time
+        "heading": curr_time,
+        "altitude": curr_time
     }
 
     # From M8N documentation:
@@ -115,8 +132,17 @@ async def async_main():
                         asyncio.run(send_orientation_message(
                             websocket, attitude.roll, attitude.pitch, attitude.yaw))
 
+                def altitude_callback(self, _, altitude):
+                    curr_time = time.perf_counter()
+                    if curr_time >= last_data_send_times["altitude"] + 1./args.frequency:
+                        if args.debug:
+                            print("Altitude", altitude)
+                        last_data_send_times["altitude"] = curr_time
+                        asyncio.run(send_altitude_message(websocket, altitude))
+
                 ardupilot.add_attribute_listener("location.global_frame", gps_callback)
                 ardupilot.add_attribute_listener("attitude", orientation_callback)
+                ardupilot.add_attribute_listener("location.global_frame.alt", altitude_callback)
 
                 try:
                     await asyncio.Future()
@@ -124,6 +150,7 @@ async def async_main():
                     print(e)
                     ardupilot.remove_attribute_listener("location.global_frame", gps_callback)
                     ardupilot.remove_attribute_listener("attitude", orientation_callback)
+                    ardupilot.remove_attribute_listener("location.global_frame.alt", altitude_callback)
                     print("Reconnecting to rover server...")
                     continue
         except (websockets.WebSocketException, OSError):

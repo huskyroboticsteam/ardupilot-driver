@@ -60,3 +60,11 @@ Make sure `tmux` is installed, if not then `sudo apt install tmux`. Then:
     "heading": number
 }
 ```
+
+### Altitude
+```
+{
+    "type": "altitude",
+    "altitude": number
+}
+```
