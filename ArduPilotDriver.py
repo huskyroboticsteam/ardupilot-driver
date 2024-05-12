@@ -119,7 +119,7 @@ async def async_main():
                 ardupilot.add_attribute_listener("attitude", orientation_callback)
 
                 try:
-                    asyncio.get_event_loop().run_forever()
+                    await asyncio.Future()
                 except websockets.ConnectionClosed as e:
                     print(e)
                     ardupilot.remove_attribute_listener("location.global_frame", gps_callback)
