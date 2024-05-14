@@ -53,10 +53,10 @@ Make sure `tmux` is installed, if not then `sudo apt install tmux`. Then:
 }
 ```
 
-### Heading
+### Altitude
 ```
 {
-    "type": "heading",
-    "heading": number
+    "type": "altitude",
+    "altitude": number
 }
 ```
