@@ -64,14 +64,6 @@ async def send_orientation_message(websocket, roll, pitch, yaw):
     await websocket.send(json.dumps(msg))
 
 
-async def send_heading_message(websocket, heading):
-    msg = {
-        "type": "heading",
-        "heading": heading
-    }
-    await websocket.send(json.dumps(msg))
-
-
 async def send_altitude_message(websocket, altitude):
     msg = {
         "type": "altitude",
@@ -95,7 +87,6 @@ async def async_main():
     last_data_send_times = {
         "gps": curr_time,
         "orientation": curr_time,
-        "heading": curr_time,
         "altitude": curr_time
     }
 
