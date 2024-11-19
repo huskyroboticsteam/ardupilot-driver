@@ -25,11 +25,12 @@ def debug_GPS_vars():
         time.sleep(1)
         lat = ardupilot.location.global_frame.lat
         lon = ardupilot.location.global_frame.lon
+        alt = ardupilot.location.global_frame.alt
         roll = ardupilot.attitude.roll
         pitch = ardupilot.attitude.pitch
         yaw = ardupilot.heading
-        print("lat: {}, lon: {}, roll: {}, pitch: {}, yaw: {}"
-              .format(lat, lon, roll, pitch, yaw))
+        print("lat: {}, lon: {}, alt {}, roll: {}, pitch: {}, yaw: {}"
+              .format(lat, lon, alt, roll, pitch, yaw))
 
 
 def get_args():
@@ -45,11 +46,12 @@ def get_args():
     return parser.parse_args()
 
 
-async def send_gps_message(websocket, lat, lon):
+async def send_gps_message(websocket, lat, lon, alt):
     msg = {
         "type": "gps",
         "lat": lat,
-        "lon": lon
+        "lon": lon,
+        "alt": alt
     }
     await websocket.send(json.dumps(msg))
 
@@ -78,8 +80,7 @@ async def async_main():
     curr_time = time.perf_counter()
     last_data_send_times = {
         "gps": curr_time,
-        "orientation": curr_time,
-        "heading": curr_time
+        "orientation": curr_time
     }
 
     # From M8N documentation:
@@ -100,7 +101,7 @@ async def async_main():
                             print("GPS Fix:", ardupilot.gps_0.fix_type, frame)
                         if ardupilot.gps_0.fix_type > 1:
                             last_data_send_times["gps"] = curr_time
-                            asyncio.run(send_gps_message(websocket, frame.lat, frame.lon))
+                            asyncio.run(send_gps_message(websocket, frame.lat, frame.lon, frame.alt))
 
                 def orientation_callback(self, _, attitude):
                     curr_time = time.perf_counter()
