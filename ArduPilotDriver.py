@@ -25,11 +25,12 @@ def debug_GPS_vars():
         time.sleep(1)
         lat = ardupilot.location.global_frame.lat
         lon = ardupilot.location.global_frame.lon
+        alt = ardupilot.location.global_frame.alt
         roll = ardupilot.attitude.roll
         pitch = ardupilot.attitude.pitch
         yaw = ardupilot.heading
-        print("lat: {}, lon: {}, roll: {}, pitch: {}, yaw: {}"
-              .format(lat, lon, roll, pitch, yaw))
+        print("lat: {}, lon: {}, alt {}, roll: {}, pitch: {}, yaw: {}"
+              .format(lat, lon, alt, roll, pitch, yaw))
 
 
 def get_args():
@@ -45,11 +46,12 @@ def get_args():
     return parser.parse_args()
 
 
-async def send_gps_message(websocket, lat, lon):
+async def send_gps_message(websocket, lat, lon, alt):
     msg = {
         "type": "gps",
         "lat": lat,
-        "lon": lon
+        "lon": lon,
+        "alt": alt
     }
     await websocket.send(json.dumps(msg))
 
@@ -60,14 +62,6 @@ async def send_orientation_message(websocket, roll, pitch, yaw):
         "roll": roll,
         "pitch": pitch,
         "yaw": yaw
-    }
-    await websocket.send(json.dumps(msg))
-
-
-async def send_altitude_message(websocket, altitude):
-    msg = {
-        "type": "altitude",
-        "altitude": altitude
     }
     await websocket.send(json.dumps(msg))
 
@@ -86,8 +80,7 @@ async def async_main():
     curr_time = time.perf_counter()
     last_data_send_times = {
         "gps": curr_time,
-        "orientation": curr_time,
-        "altitude": curr_time
+        "orientation": curr_time
     }
 
     # From M8N documentation:
@@ -108,7 +101,7 @@ async def async_main():
                             print("GPS Fix:", ardupilot.gps_0.fix_type, frame)
                         if ardupilot.gps_0.fix_type > 1:
                             last_data_send_times["gps"] = curr_time
-                            asyncio.run(send_gps_message(websocket, frame.lat, frame.lon))
+                            asyncio.run(send_gps_message(websocket, frame.lat, frame.lon, frame.alt))
 
                 def orientation_callback(self, _, attitude):
                     curr_time = time.perf_counter()
@@ -123,17 +116,8 @@ async def async_main():
                         asyncio.run(send_orientation_message(
                             websocket, attitude.roll, attitude.pitch, attitude.yaw))
 
-                def altitude_callback(self, _, altitude):
-                    curr_time = time.perf_counter()
-                    if curr_time >= last_data_send_times["altitude"] + 1./args.frequency:
-                        if args.debug:
-                            print("Altitude", altitude)
-                        last_data_send_times["altitude"] = curr_time
-                        asyncio.run(send_altitude_message(websocket, altitude))
-
                 ardupilot.add_attribute_listener("location.global_frame", gps_callback)
                 ardupilot.add_attribute_listener("attitude", orientation_callback)
-                ardupilot.add_attribute_listener("location.global_frame.alt", altitude_callback)
 
                 try:
                     await asyncio.Future()
@@ -141,7 +125,6 @@ async def async_main():
                     print(e)
                     ardupilot.remove_attribute_listener("location.global_frame", gps_callback)
                     ardupilot.remove_attribute_listener("attitude", orientation_callback)
-                    ardupilot.remove_attribute_listener("location.global_frame.alt", altitude_callback)
                     print("Reconnecting to rover server...")
                     continue
         except (websockets.WebSocketException, OSError):
