@@ -25,7 +25,6 @@ def debug_GPS_vars():
         time.sleep(1)
         lat = ardupilot.location.global_frame.lat
         lon = ardupilot.location.global_frame.lon
-        #added zeroes for easy adjustment of values if the gps is mounted at an angle
         roll = ardupilot.attitude.roll + 0
         pitch = ardupilot.attitude.pitch + 0
         yaw = ardupilot.heading + 0
