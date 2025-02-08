@@ -25,9 +25,9 @@ def debug_GPS_vars():
         time.sleep(1)
         lat = ardupilot.location.global_frame.lat
         lon = ardupilot.location.global_frame.lon
-        roll = ardupilot.attitude.roll
-        pitch = ardupilot.attitude.pitch
-        yaw = ardupilot.heading
+        roll = ardupilot.attitude.roll + 0
+        pitch = ardupilot.attitude.pitch + 0
+        yaw = ardupilot.heading + 0
         print("lat: {}, lon: {}, roll: {}, pitch: {}, yaw: {}"
               .format(lat, lon, roll, pitch, yaw))
 
