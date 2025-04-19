@@ -39,7 +39,8 @@ Make sure `tmux` is installed, if not then `sudo apt install tmux`. Then:
 {
     "type": "gps",
     "lat": number,
-    "lon": number
+    "lon": number,
+    "alt": number
 }
 ```
 
@@ -50,13 +51,5 @@ Make sure `tmux` is installed, if not then `sudo apt install tmux`. Then:
     "roll": number,
     "pitch": number,
     "yaw": number
-}
-```
-
-### Heading
-```
-{
-    "type": "heading",
-    "heading": number
 }
 ```
