@@ -35,7 +35,7 @@ def debug_GPS_vars():
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("-p", "--port", default="/dev/ttyACM0",
+    parser.add_argument("-p", "--port", default="/dev/ttyARDUPILOT",
                         help="Serial port connected to ardupilot")
     parser.add_argument("-hz", "--frequency", type=float,
                         default=10.0, help="Rate at which data is sent")
