@@ -4,3 +4,4 @@ pyserial==3.5
 websockets==11.0.3
 dronekit==2.9.2
 asyncio==3.4.3
+future

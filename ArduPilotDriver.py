@@ -105,16 +105,21 @@ async def async_main():
 
                 def orientation_callback(self, _, attitude):
                     curr_time = time.perf_counter()
+
+                    # Apply offsets
+                    offset_pitch = float(attitude.pitch)
+                    offset_roll = float(attitude.yaw)
+                    offset_yaw = float(attitude.roll)
+
                     if curr_time >= last_data_send_times["orientation"] + 1./args.frequency:
-                        if args.debug:
-                            print(attitude)
-                        else:
-                            pitch_deg = attitude.pitch * 180 / math.pi
-                            roll_deg = attitude.roll * 180 / math.pi
-                            print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}", end="")
+                        pitch_deg = offset_pitch * 180 / math.pi
+                        roll_deg = offset_roll * 180 / math.pi
+                        yaw_deg = offset_yaw * 180 / math.pi
+
+                        print(f"\33[2K\rroll={roll_deg: 4.0f}, pitch={pitch_deg: 4.0f}, yaw={yaw_deg: 4.0f}", end="")
                         last_data_send_times["orientation"] = curr_time
                         asyncio.run(send_orientation_message(
-                            websocket, attitude.roll, attitude.pitch, attitude.yaw))
+                            websocket, attitude, offset_pitch, offset_yaw))
 
                 ardupilot.add_attribute_listener("location.global_frame", gps_callback)
                 ardupilot.add_attribute_listener("attitude", orientation_callback)
